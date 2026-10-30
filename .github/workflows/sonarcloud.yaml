@@ -19,19 +19,19 @@
 
 ---
 name: SonarCloud
-on:
-  #push:
-  #  branches:
-  #    - master
-  #    - main
-  #  ignore-paths:
-  #    - '**/README.md'
-  #pull_request:
-  #  branches:
-  #    - master
-  #    - main
-  #  ignore-paths:
-  #    - '**/README.md'
+on:  # yamllint disable-line rule:truthy
+  push:
+    branches:
+      - master
+      - main
+    paths-ignore:
+      - '**/*.md'
+  pull_request:
+    branches:
+      - master
+      - main
+    paths-ignore:
+      - '**/*.md'
   #  types:
   #    - opened
   #    - synchronize
@@ -50,7 +50,7 @@ permissions:
   pull-requests: read
 
 concurrency:
-  group: ${{ github.ref }}-${{ github.workflow }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -58,12 +58,37 @@ jobs:
     name: SonarCloud
     runs-on: ubuntu-latest
     steps:
+      - name: Linux Release
+        if: runner.os == 'Linux'
+        run: |
+          [ -e /.dockerenv ] && ls -l /.dockerenv
+          echo
+          cat /etc/*-release
+
+      - name: Linux Hardware
+        if: runner.os == 'Linux'
+        run: |
+          set +x
+          echo -n "CPUs: "
+          nproc
+          echo
+          free -g
+          echo
+          df -h
+
+      - name: Environment
+        run: env | sort
+
+      - name: Git version
+        run: git --version
+
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
 
       - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-github-action@master
+        #uses: SonarSource/sonarcloud-github-action@master
+        uses: SonarSource/sonarqube-scan-action@v6
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
+          #GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

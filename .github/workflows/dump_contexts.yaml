@@ -20,9 +20,13 @@
 ---
 name: Dump Contexts
 
-on:
+on:  # yamllint disable-line rule:truthy
   workflow_call:
     inputs:
+      os:
+        type: string
+        required: false
+        description: OS to run on (defaults to both Ubuntu Linux and macOS)
       debug:
         type: string
         required: false
@@ -36,7 +40,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.ref }}-${{ github.workflow }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 env:
@@ -45,13 +49,52 @@ env:
 jobs:
   dump_contexts:
     name: Dump Contexts
-    runs-on: ubuntu-latest
-    container: ubuntu:latest
+    #runs-on: ubuntu-latest
+    #container: ubuntu:latest
+    runs-on: ${{ inputs.runs-on || github.event.inputs.runs-on || matrix.os }}
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+    # run inside a Docker container when on Ubuntu Linux
+    # so we can get a little more environment and context output
+    container: ${{ matrix.os == 'ubuntu-latest' && 'ubuntu:latest' || '' }}
     timeout-minutes: 10
     steps:
+      - name: Linux Release
+        if: runner.os == 'Linux'
+        run: |
+          [ -e /.dockerenv ] && ls -l /.dockerenv
+          echo
+          cat /etc/*-release
+
+      - name: Linux Hardware
+        if: runner.os == 'Linux'
+        run: |
+          set +x
+          echo -n "CPUs: "
+          nproc
+          echo
+          free -g
+          echo
+          df -h
+
+      - name: macOS System Version
+        if: runner.os == "macOS"
+        run: sw_vers
+
+      - name: macOS Hardware
+        if: runner.os == "macOS"
+        run: |
+          sysctl -n machdep.cpu.brand_string
+          system_profiler SPHardwareDataType
 
       - name: Environment
         run: env | sort
+
+      - name: Git version
+        run: git --version
 
       - name: Dump GitHub context
         env:

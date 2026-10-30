@@ -158,7 +158,7 @@ env:
 
 # https://docs.github.com/en/actions/learn-github-actions/events-that-trigger-workflows
 
-on:
+on:  # yamllint disable-line rule:truthy
   push:
     branches:
       - master
@@ -291,7 +291,7 @@ permissions:
 # XXX: cancels previous builds that haven't started even if cancel-in-progress is set to false
 concurrency:
   # XXX: don't set this to the same group in a reusable workflow and calling workflow, that will result in a deadlock
-  group: ${{ github.ref }}-${{ github.workflow }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false  # build auto-cancellation - enabling this causes false-positive badge failure statuses
 
 
@@ -374,7 +374,13 @@ jobs:
     #               Chooser Runner - OS, Language, Matrix etc.
     # ============================================================================ #
 
+    # List of Available GitHub Actions Hosted Runners:
+    #
+    #   https://github.com/actions/runner-images#available-images
+    #
     runs-on: ubuntu-latest
+    #runs-on: ubuntu-24.04
+    #runs-on: ubuntu-22.04
 
     #runs-on: # AND'd criteria when given list
     #  - self-hosted
@@ -564,8 +570,9 @@ jobs:
       - uses: actions/setup-java@v2
         #name: Setup Java
         with:
-          distribution: 'temurin' # See 'Supported distributions' for available options
-          java-version: '17'  # 8, 11, 16, 17
+          distribution: temurin # See 'Supported distributions' for available options
+          java-version: '21'  # 8, 11, 16, 17, 21
+          #cache: gradle
 
       # https://github.com/marketplace/actions/setup-node-js-environment
       #
@@ -573,6 +580,200 @@ jobs:
         #name: Setup NodeJS
         with:
           node-version: '14'
+
+    # ============================================================================ #
+    #                                 C a c h e
+    # ============================================================================ #
+
+    # https://github.com/actions/cache
+    # https://github.com/marketplace/actions/cache
+
+    # Cache with matrix
+
+# ============================================================================ #
+# Python
+#
+#    - uses: actions/cache@v4
+#      if: startsWith(runner.os, 'Linux')
+#      with:
+#        path: ~/.cache/pip
+#        key: pip-${{ runner.os }}-${{ runner.arch }}  # -${{ github.workflow }}-${{ hashFiles('**/requirements.txt') }}
+#        restore-keys: |
+#          pip-${{ runner.os }}-${{ runner.arch }}  # -${{ github.workflow }}-
+#
+#    - uses: actions/cache@v4
+#      if: startsWith(runner.os, 'macOS')
+#      with:
+#        path: ~/Library/Caches/pip
+#        key: pip-${{ runner.os }}-${{ runner.arch }}  # -${{ github.workflow }}-${{ hashFiles('**/requirements.txt') }}
+#        restore-keys: |
+#          pip-${{ runner.os }}-${{ runner.arch }}  # -${{ github.workflow }}-
+#
+# ============================================================================
+# Perl
+#
+#    - uses: actions/cache@v4
+#      with:
+#        path: ~/.cpanm
+#        key: cpanm-${{ runner.os }}-${{ runner.arch }}  # -${{ github.workflow }}-${{ hashFiles('**/cpan-requirements.txt') }}
+#        restore-keys: |
+#          cpanm-${{ runner.os }}-${{ runner.arch }}  # -${{ github.workflow }}-
+#
+# ============================================================================
+# Go
+#
+#    - uses: actions/cache@v4
+#      with:
+#        path: ~/go/pkg/mod
+#        key: go-${{ runner.os }}-${{ runner.arch }}  # -${{ github.workflow }}-${{ hashFiles('**/go.sum') }}
+#        restore-keys: |
+#          go-${{ runner.os }}-${{ runner.arch }}  # -${{ github.workflow }}-
+#
+# ============================================================================
+# Java / Maven
+#
+#    - uses: actions/cache@v4
+#      name: Maven Cache
+#      with:
+#        path: ~/.m2/repository
+#        key: maven-${{ runner.os }}-${{ runner.arch }}  # -${{ github.workflow }}-${{ hashFiles('**/pom.xml') }}
+#        restore-keys: |
+#          maven-${{ runner.os }}-${{ runner.arch }}  # -${{ github.workflow }}-
+#
+#    - uses: actions/cache@v4
+#      name: Maven Wrapper Cache
+#      with:
+#        path: ~/.m2/wrapper
+#        key: maven-wrapper-${{ runner.os }}-${{ runner.arch }}  # -${{ github.workflow }}-${{ hashFiles('**/pom.xml') }}
+#        restore-keys: |
+#          maven-wrapper-${{ runner.os }}-${{ runner.arch }}  # -${{ github.workflow }}-
+#
+# ============================================================================
+# Scala / SBT
+#
+#    - uses: actions/cache@v4
+#      name: SBT Cache
+#      with:
+#        path: ~/.sbt
+#        key: sbt-${{ runner.os }}-${{ runner.arch }}  # -${{ github.workflow }}-${{ hashFiles('**/build.sbt') }}
+#        restore-keys:
+#          sbt-${{ runner.os }}-${{ runner.arch }}  # -${{ github.workflow }}-
+#
+#    - uses: actions/cache@v4
+#      name: SBT Ivy Cache
+#      with:
+#        path: ~/.ivy2/cache
+#        key: sbt-ivy-cache-${{ runner.os }}-${{ runner.arch }}  # -${{ github.workflow }}-${{ hashFiles('**/build.sbt') }}
+#        restore-keys: |
+#          sbt-ivy-cache-${{ runner.os }}-${{ runner.arch }}  # -${{ github.workflow }}-
+#
+# ============================================================================
+# Gradle
+#
+#    - uses: actions/cache@v4
+#      name: Gradle Cache
+#      with:
+#        path: ~/.gradle/caches
+#        key: gradle-cache-${{ runner.os }}-${{ runner.arch }}  # -${{ github.workflow }}-${{ hashFiles('**/build.gradle') }}
+#        restore-keys: |
+#          gradle-cache-${{ runner.os }}-${{ runner.arch }}  # -${{ github.workflow }}-
+#
+#    - uses: actions/cache@v4
+#      name: Gradle Wrapper Cache
+#      with:
+#        path: ~/.gradle/wrapper
+#        key: gradle-wrapper-${{ runner.os }}-${{ runner.arch }}  # -${{ github.workflow }}-${{ hashFiles('**/build.gradle') }}
+#        restore-keys: |
+#          gradle-wrapper-${{ runner.os }}-${{ runner.arch }}  # -${{ github.workflow }}-
+
+# ============================================================================
+# CocoaPods (for Mobile iOS builds)
+#
+#      - uses: actions/cache@v4
+#        name: Cocoa Pods Cache
+#        with:
+#          path: Pods
+#          key: cocoapods-${{ runner.os }}-${{ runner.arch }}  # -${{ github.workflow }}-${{ hashFiles('**/Podfile') }}
+#          restore-key: |
+#            cocoapods-${{ runner.os }}-${{ runner.arch }}  # -${{ github.workflow }}-
+
+# ============================================================================
+# macOS Xcode Cache
+#
+#      - uses: irgaly/xcode-cache@985ae4fb036020b70ecd8797146f43a5b87f8ac2 # v1
+#        with:
+#          key: xcode-derived-data-${{ github.workflow }}-${{ github.ref }}
+#          restore-keys: |
+#            xcode-derived-data-${{ runner.os }}-${{ runner.arch }}-${{ github.workflow }}-${{ github.ref }}
+#            xcode-derived-data-${{ runner.os }}-${{ runner.arch }}-${{ github.workflow }}-
+#
+## OR
+#
+#      - uses: actions/cache@v4
+#        name: Cache Xcode DerivedData
+#        with:
+#          path: ~/Library/Developer/Xcode/DerivedData
+#          key: xcode-derived-data-${{ runner.os }}-${{ runner.arch }}-${{ github.workflow }}-${{ github.ref }}
+#          restore-keys: |
+#            xcode-derived-data-${{ runner.os }}-${{ runner.arch }}-${{ github.workflow }}-${{ github.ref }}
+#            xcode-derived-data-${{ runner.os }}-${{ runner.arch }}-${{ github.workflow }}-
+#
+#      - name: Cache Build
+#        uses: actions/cache@v4
+#        with:
+#          path: build/
+#          key: xcode-build-${{ runner.os }}-${{ runner.arch }}-${{ github.workflow }}-${{ github.ref }}
+#          restore-keys: |
+#            xcode-build-${{ runner.os }}-${{ runner.arch }}-${{ github.workflow }}-${{ github.ref }}
+#            xcode-build-${{ runner.os }}-${{ runner.arch }}-${{ github.workflow }}
+
+# ============================================================================
+# Alpine OS APK
+#
+#      - name: Apk Cache
+#        if: startsWith(runner.os, 'Linux')
+#        uses: actions/cache@v4
+#        with:
+#          path: /var/cache/apk
+#          key: apk-cache-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('/etc/*release') }}
+#          restore-keys: |
+#            apk-cache-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('/etc/*release') }}
+
+# ============================================================================
+# Debian / Ubuntu Apt
+#
+#      - name: Apt Cache
+#        if: startsWith(runner.os, 'Linux')
+#        uses: actions/cache@v4
+#        with:
+#          path: /var/cache/apt
+#          key: apt-cache-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('/etc/*release') }}
+#          restore-keys: |
+#            apt-cache-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('/etc/*release') }}
+
+# ============================================================================
+# macOS Homebrew Cache
+#
+#      - name: Brew Cache
+#        if: startsWith(runner.os, 'macOS')
+#        uses: actions/cache@v4
+#        with:
+#          path: ~/Library/Caches/Homebrew/
+#          key: brew-cache-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles(' /System/Library/CoreServices/SystemVersion.plist') }}
+#          restore-keys: |
+#            brew-cache-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles(' /System/Library/CoreServices/SystemVersion.plist') }}
+
+# ============================================================================
+# Redhat / CentOS / RockyLinux Yum RPM cache
+#
+#      - name: Yum Cache
+#        if: startsWith(runner.os, 'Linux')
+#        uses: actions/cache@v4
+#        with:
+#          path: /var/cache/yum
+#          key: yum-cache-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('/etc/*release') }}
+#          restore-keys: |
+#            yum-cache-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('/etc/*release') }}
 
       # ============================================================================ #
       #                                 B u i l d
@@ -628,10 +829,34 @@ jobs:
         if: ${{ failure() }}
         run: echo 'run a notify command or action here'
 
+#  docker:
+#    #name: docker
+#    runs-on: ubuntu-latest
+#    steps:
+#      - uses: docker://harisekhon/centos-dev
+#      - name: build & test
+#        run: make build test
+
+# ============================================================================ #
+# Artifact Upload / Download for sharing between jobs or storing
+#
+# https://github.com/marketplace/actions/upload-a-build-artifact
+#
+# - uses: actions/upload-artifact@v2
+#   with:
+#     name: my-artifact
+#       path: path/to/file.jar
+#
+# https://github.com/marketplace/actions/download-a-build-artifact
+#
+# - uses: actions/download-artifact@v2
+#   with:
+#     name: my-artifact  # if name isn't specified, downloads all artifacts to subdirectories of same name
+#     #path: path/to/artifacts-dir
+
   # ============================================================================ #
   #                                D o c k e r
   # ============================================================================ #
-
   # Call reusable workflow
   dockerhub_build:
     name: DockerHub Build
@@ -1216,133 +1441,6 @@ jobs:
       contents: read
       security-events: write
 
-    # ============================================================================ #
-    #                                 C a c h e
-    # ============================================================================ #
-
-    # https://github.com/actions/cache
-    # https://github.com/marketplace/actions/cache
-
-    # Cache with matrix
-
-#    - uses: actions/cache@v2
-#      with:
-#        path: ~/.cache/pip
-#        key: ${{ runner.os }}-pip-bash-tools  # ${{ hashFiles('**/requirements.txt') }}
-#        restore-keys: |
-#          ${{ runner.os }}-pip-
-#    - uses: actions/cache@v2
-#      with:
-#        path: ~/.cpanm
-#        key: ${{ runner.os }}-cpanm-bash-tools  # ${{ hashFiles('**/cpan-requirements.txt') }}
-#        restore-keys: |
-#          ${{ runner.os }}-cpanm-
-
-# ============================================================================ #
-# Python
-#    - uses: actions/cache@v2
-#      if: startsWith(runner.os, 'Linux')
-#      with:
-#        path: ~/.cache/pip
-#        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-#        restore-keys: |
-#          ${{ runner.os }}-pip-
-#
-#    - uses: actions/cache@v2
-#      if: startsWith(runner.os, 'macOS')
-#      with:
-#        path: ~/Library/Caches/pip
-#        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-#        restore-keys: |
-#          ${{ runner.os }}-pip-
-# ============================================================================
-# Perl
-#    - uses: actions/cache@v2
-#      with:
-#        path: ~/.cpanm
-#        key: ${{ runner.os }}-cpanm-${{ hashFiles('**/cpan-requirements.txt') }}
-#        restore-keys: |
-#          ${{ runner.os }}-cpanm-
-# ============================================================================
-# Go
-#    - uses: actions/cache@v2
-#      with:
-#        path: ~/go/pkg/mod
-#        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-#        restore-keys: |
-#          ${{ runner.os }}-go-
-# ============================================================================
-# Java / Maven
-#    - uses: actions/cache@v2
-#      name: Maven Cache
-#      with:
-#        path: ~/.m2/repository
-#        key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-#        restore-keys: |
-#          ${{ runner.os }}-maven-
-#    - uses: actions/cache@v2
-#      name: Maven Wrapper
-#      with:
-#        path: ~/.m2/wrapper
-#        key: ${{ runner.os }}-maven-wrapper-${{ hashFiles('**/pom.xml') }}
-#        restore-keys: |
-#          ${{ runner.os }}-maven-wrapper-
-# ============================================================================
-# Scala / SBT
-#    - uses: actions/cache@v2
-#      name: SBT Cache
-#      with:
-#        path: ~/.sbt
-#        key: ${{ runner.os }}-sbt-${{ hashFiles('**/build.sbt') }}
-#    - uses: actions/cache@v2
-#      name: SBT Ivy Cache
-#      with:
-#        path: ~/.ivy2/cache
-#        key: ${{ runner.os }}-sbt-ivy-cache-${{ hashFiles('**/build.sbt') }}
-# ============================================================================
-# Gradle
-#    - uses: actions/cache@v2
-#      name: Gradle Cache
-#      with:
-#        path: ~/.gradle/caches
-#        key: ${{ runner.os }}-gradle-cache-${{ hashFiles('**/build.gradle') }}
-#        restore-keys: |
-#          ${{ runner.os }}-gradle-cache-
-#    - uses: actions/cache@v2
-#      name: Gradle Wrapper
-#      with:
-#        path: ~/.gradle/wrapper
-#        key: ${{ runner.os }}-gradle-wrapper-${{ hashFiles('**/build.gradle') }}
-#        restore-keys: |
-#          ${{ runner.os }}-gradle-wrapper-
-
-#  docker:
-#    #name: docker
-#    runs-on:
-#      - ubuntu-latest
-#
-#    steps:
-#    - uses: docker://harisekhon/centos-dev
-#    -  name: build & test
-#       run: make build test
-
-# ============================================================================ #
-# Artifact Upload / Download for sharing between jobs or storing
-#
-# https://github.com/marketplace/actions/upload-a-build-artifact
-#
-# - uses: actions/upload-artifact@v2
-#   with:
-#     name: my-artifact
-#       path: path/to/file.jar
-#
-# https://github.com/marketplace/actions/download-a-build-artifact
-#
-# - uses: actions/download-artifact@v2
-#   with:
-#     name: my-artifact  # if name isn't specified, downloads all artifacts to subdirectories of same name
-#     #path: path/to/artifacts-dir
-#
 # ============================================================================ #
 # GitHub Script - runs JavaScript Octokit API calls to GitHub
 #

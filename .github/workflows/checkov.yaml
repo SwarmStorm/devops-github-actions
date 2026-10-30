@@ -22,7 +22,7 @@
 ---
 name: Checkov
 
-on:
+on:  # yamllint disable-line rule:truthy
   push:
     branches:
       - master
@@ -77,6 +77,30 @@ jobs:
     if: github.actor != 'dependabot[bot]'
 
     steps:
+      - name: Linux Release
+        if: runner.os == 'Linux'
+        run: |
+          [ -e /.dockerenv ] && ls -l /.dockerenv
+          echo
+          cat /etc/*-release
+
+      - name: Linux Hardware
+        if: runner.os == 'Linux'
+        run: |
+          set +x
+          echo -n "CPUs: "
+          nproc
+          echo
+          free -g
+          echo
+          df -h
+
+      - name: Environment
+        run: env | sort
+
+      - name: Git version
+        run: git --version
+
       - name: Generate LOG_LEVEL environment variable
         run: |
           if [ -n "$DEBUG" ]; then
@@ -85,13 +109,10 @@ jobs:
             echo "LOG_LEVEL=WARNING" >> "$GITHUB_ENV"
           fi
 
-      - name: Environment
-        run: env | sort
-
-      - name: Set up Python 3.8
+      - name: Set up Python 3.13
         uses: actions/setup-python@v1
         with:
-          python-version: 3.8
+          python-version: 3.13.2
 
       - name: Git version
         run: git --version
