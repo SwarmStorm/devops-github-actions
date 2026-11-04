@@ -21,7 +21,7 @@
 ---
 name: HashiCorp Packer Mac
 
-on:
+on:  # yamllint disable-line rule:truthy
   workflow_call:
     inputs:
       files:
@@ -34,7 +34,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.ref }}-${{ github.workflow }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 defaults:
@@ -46,6 +46,30 @@ jobs:
     name: Packer
     runs-on: macos-13
     steps:
+      - name: Linux Release
+        if: runner.os == 'Linux'
+        run: |
+          [ -e /.dockerenv ] && ls -l /.dockerenv
+          echo
+          cat /etc/*-release
+
+      - name: Linux Hardware
+        if: runner.os == 'Linux'
+        run: |
+          set +x
+          echo -n "CPUs: "
+          nproc
+          echo
+          free -g
+          echo
+          df -h
+
+      - name: Environment
+        run: env | sort
+
+      - name: Git version
+        run: git --version
+
       - uses: actions/checkout@v3
         #name: Git Checkout  # better to show the action@version
 
